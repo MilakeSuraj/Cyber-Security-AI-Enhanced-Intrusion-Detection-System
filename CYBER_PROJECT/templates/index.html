@@ -378,19 +378,50 @@
         min-height: 340px;
         max-width: 98vw;
         position: relative;
-        animation: popup 0.25s, neon-border 2.5s linear infinite alternate;
         border: 2.5px solid #00ff41;
         color: #fff;
         text-shadow: 0 0 2px #00ff41, 0 0 2px #111;
         font-family: "Fira Mono", "Consolas", monospace;
-        opacity: 0;
-        transform: scale(0.7);
-        animation: popup-in 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards,
-          neon-border 2.5s linear infinite alternate;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        opacity: 1;
+        transform: none;
+        transition: transform 0.5s, opacity 0.5s;
+      }
+
+      /* Flip animations for modal popup */
+      .modal-content.flip-in {
+        animation: flipInY 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        backface-visibility: visible;
+      }
+      .modal-content.flip-out {
+        animation: flipOutY 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        backface-visibility: visible;
+      }
+      @keyframes flipInY {
+        0% {
+          transform: perspective(600px) rotateY(90deg) scale(0.7);
+          opacity: 0;
+        }
+        60% {
+          transform: perspective(600px) rotateY(-10deg) scale(1.05);
+          opacity: 1;
+        }
+        80% {
+          transform: perspective(600px) rotateY(10deg) scale(0.98);
+        }
+        100% {
+          transform: perspective(600px) rotateY(0deg) scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes flipOutY {
+        0% {
+          transform: perspective(600px) rotateY(0deg) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: perspective(600px) rotateY(90deg) scale(0.7);
+          opacity: 0;
+        }
       }
 
       .prediction-fields {
@@ -662,9 +693,36 @@
         setTimeout(function () {
           var loader = document.getElementById("loaderOverlay");
           if (loader) loader.style.display = "none";
+          // The following block will be injected only if prediction exists
         }, 3000); // Loader stays for 3s for effect
       });
     </script>
+    {% if prediction %}
+    <script>
+      // Show prediction popup if prediction exists (after loader hides)
+      setTimeout(function () {
+        // Always try to get values from sessionStorage (set on submit)
+        let stored = sessionStorage.getItem("lastFormData");
+        if (stored) {
+          lastFormData = JSON.parse(stored);
+          sessionStorage.removeItem("lastFormData");
+        }
+        showPredictionFields();
+        document.getElementById("predictionValue").textContent =
+          "{{ prediction|e }}";
+        // Ensure modal is visible and animate flip-in
+        var modal = document.getElementById("predictionModal");
+        var modalContent = document.querySelector(".modal-content");
+        if (modal && modalContent) {
+          modal.style.display = "flex";
+          modalContent.classList.remove("flip-out");
+          // Trigger reflow to restart animation if needed
+          void modalContent.offsetWidth;
+          modalContent.classList.add("flip-in");
+        }
+      }, 3000);
+    </script>
+    {% endif %}
     <div class="container">
       <div class="scanline"></div>
       <div class="icon-bar">
@@ -779,14 +837,29 @@
       let lastFormData = null;
 
       function closeModal() {
-        document.getElementById("predictionModal").style.display = "none";
-        // Clear displayed values
-        document.getElementById("fieldFlowDuration").textContent = "";
-        document.getElementById("fieldTotalFwdPackets").textContent = "";
-        document.getElementById("fieldTotalBackwardPackets").textContent = "";
-        document.getElementById("fieldTotalLengthFwdPackets").textContent = "";
-        document.getElementById("predictionFields").style.display = "none";
-        lastFormData = null;
+        const modal = document.getElementById("predictionModal");
+        const modalContent = document.querySelector(".modal-content");
+        if (modalContent) {
+          modalContent.classList.remove("flip-in");
+          modalContent.classList.add("flip-out");
+          // Wait for animation to finish before hiding
+          modalContent.addEventListener("animationend", function handler() {
+            modal.style.display = "none";
+            modalContent.classList.remove("flip-out");
+            // Clear displayed values
+            document.getElementById("fieldFlowDuration").textContent = "";
+            document.getElementById("fieldTotalFwdPackets").textContent = "";
+            document.getElementById("fieldTotalBackwardPackets").textContent =
+              "";
+            document.getElementById("fieldTotalLengthFwdPackets").textContent =
+              "";
+            document.getElementById("predictionFields").style.display = "none";
+            lastFormData = null;
+            modalContent.removeEventListener("animationend", handler);
+          });
+        } else {
+          modal.style.display = "none";
+        }
       }
 
       window.onclick = function (event) {
@@ -845,29 +918,5 @@
       // For server-side prediction, show values if available
       // (Jinja2 block must be outside the JS function)
     </script>
-
-    {% if prediction %}
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Always try to get values from sessionStorage (set on submit)
-        let stored = sessionStorage.getItem("lastFormData");
-        if (stored) {
-          lastFormData = JSON.parse(stored);
-          sessionStorage.removeItem("lastFormData");
-        }
-        showPredictionFields();
-        document.getElementById("predictionValue").textContent =
-          "{{ prediction|e }}";
-        // Ensure modal is visible and opacity is set
-        var modal = document.getElementById("predictionModal");
-        var modalContent = document.querySelector(".modal-content");
-        if (modal && modalContent) {
-          modal.style.display = "flex";
-          modalContent.style.opacity = "1";
-          modalContent.style.transform = "scale(1)";
-        }
-      });
-    </script>
-    {% endif %}
   </body>
 </html>
