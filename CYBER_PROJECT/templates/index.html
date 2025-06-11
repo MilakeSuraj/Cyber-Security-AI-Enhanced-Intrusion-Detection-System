@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Web Attack Prediction</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&display=swap");
+
+      body {
+        font-family: "Fira Mono", "Consolas", "Menlo", monospace;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        background: #000;
+      }
+
+      .bg-gif {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+        background: #000;
+        pointer-events: none;
+        user-select: none;
+        animation: bg-glow 8s linear infinite alternate;
+      }
+
+      @keyframes bg-glow {
+        0% {
+          filter: brightness(1) blur(0px);
+        }
+        50% {
+          filter: brightness(1.15) blur(2px);
+        }
+        100% {
+          filter: brightness(1) blur(0px);
+        }
+      }
+
+      .container {
+        /* Modern hacker glassmorphism with layered neon, subtle grid, and cyber accent */
+        background: linear-gradient(
+          135deg,
+          rgba(10, 30, 10, 0.98) 70%,
+          rgba(0, 255, 65, 0.06) 100%
+        );
+        border-radius: 24px;
+        box-shadow: 0 0 40px 8px #00ff41cc, 0 2px 24px 0 #0f0a,
+          0 0 0 4px #00ff4122 inset;
+        max-width: 420px;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+        padding: 40px 70px 36px 50px;
+        border: 2.5px solid #00ff41;
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        transition: box-shadow 0.3s, border 0.3s;
+        overflow: hidden;
+        margin-top: 32px;
+        margin-bottom: 32px;
+      }
+
+      .container::before {
+        /* Subtle grid overlay */
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 27px,
+            #00ff4120 28px,
+            transparent 29px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 27px,
+            #00ff4120 28px,
+            transparent 29px
+          );
+        opacity: 0.13;
+        border-radius: inherit;
+      }
+
+      .container::after {
+        /* Neon accent bar */
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, #00ff41 0%, #0f0 100%);
+        opacity: 0.22;
+        border-radius: 0 0 16px 16px;
+        z-index: 2;
+        pointer-events: none;
+        box-shadow: 0 0 32px 8px #00ff41cc;
+        animation: accent-bar-move 5s linear infinite alternate;
+      }
+
+      @keyframes accent-bar-move {
+        0% {
+          opacity: 0.22;
+        }
+        100% {
+          opacity: 0.36;
+        }
+      }
+
+      .container .scanline {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #00ff41 60%,
+          transparent
+        );
+        opacity: 0.1;
+        z-index: 3;
+        pointer-events: none;
+        animation: scanline-move 2.5s linear infinite;
+      }
+      @keyframes scanline-move {
+        0% {
+          top: 0;
+        }
+        100% {
+          top: 100%;
+        }
+      }
+
+      .container .icon-bar {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 72px;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 4;
+        margin-top: -36px;
+        background: radial-gradient(
+          circle at 50% 50%,
+          #00ff4140 0%,
+          transparent 80%
+        );
+        border-radius: 50%;
+        box-shadow: 0 0 24px 2px #00ff41cc;
+      }
+
+      .container .icon-bar svg {
+        width: 54px;
+        height: 54px;
+        filter: drop-shadow(0 0 12px #00ff41cc);
+        animation: spin 7s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Cyber terminal corners */
+      .container .terminal-corner {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border: 2px solid #00ff41;
+        z-index: 5;
+        border-radius: 4px;
+      }
+      .container .terminal-corner.tl {
+        top: 0;
+        left: 0;
+        border-right: none;
+        border-bottom: none;
+      }
+      .container .terminal-corner.tr {
+        top: 0;
+        right: 0;
+        border-left: none;
+        border-bottom: none;
+      }
+      .container .terminal-corner.bl {
+        bottom: 0;
+        left: 0;
+        border-right: none;
+        border-top: none;
+      }
+      .container .terminal-corner.br {
+        bottom: 0;
+        right: 0;
+        border-left: none;
+        border-top: none;
+      }
+
+      /* Responsive */
+      @media (max-width: 500px) {
+        .container {
+          padding: 10vw 2vw 8vw 2vw;
+          max-width: 98vw;
+        }
+        .modal-content {
+          padding: 10vw;
+        }
+      }
+
+      @keyframes neon-border {
+        0% {
+          box-shadow: 0 0 32px 4px #00ff41cc, 0 1.5px 12px 0 #0f0a;
+          border-color: #00ff41;
+        }
+        100% {
+          box-shadow: 0 0 48px 8px #00ff41cc, 0 1.5px 12px 0 #0f0a;
+          border-color: #00ff41;
+        }
+      }
+
+      .container:hover {
+        box-shadow: 0 0 48px 8px #00ff41cc, 0 8px 32px 0 rgba(0, 255, 0, 0.18);
+        border-color: #00ff41;
+      }
+
+      h2 {
+        color: #fff;
+        text-shadow: 0 0 18px #00ff41, 0 0 2px #fff, 0 0 2px #111;
+        text-align: center;
+        margin-bottom: 24px;
+        letter-spacing: 2px;
+        font-size: 2rem;
+        font-family: "Fira Mono", "Consolas", monospace;
+        font-weight: bold;
+        animation: hacker-glow 2s infinite alternate;
+      }
+
+      @keyframes hacker-glow {
+        0% {
+          text-shadow: 0 0 18px #00ff41, 0 0 2px #fff;
+          color: #fff;
+        }
+        100% {
+          text-shadow: 0 0 32px #00ff41, 0 0 8px #fff;
+          color: #00ff41;
+        }
+      }
+
+      form label {
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 0 2px #00ff41, 0 0 2px #111;
+        margin-top: 10px;
+        display: block;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+        font-size: 1.08rem;
+        animation: label-flicker 2.5s infinite alternate;
+      }
+
+      @keyframes label-flicker {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        45% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        55% {
+          opacity: 0.7;
+        }
+      }
+
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0 18px 0;
+        border-radius: 7px;
+        border: 1.5px solid #00ff41;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.85);
+        font-size: 1rem;
+        font-family: "Fira Mono", "Consolas", monospace;
+        transition: border 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+        box-shadow: 0 0 8px #00ff4166;
+        outline: none;
+        /* Remove spinner arrows for number fields */
+        -moz-appearance: textfield;
+      }
+      /* Remove spinner arrows for Chrome, Safari, Edge, Opera */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      input[type="submit"] {
+        width: calc(100% + 26px); /* Increased width by 20px */
+        /* margin-left: -10px; Center the button visually */
+        box-sizing: border-box;
+        background: linear-gradient(90deg, #00ff41 0%, #0f0 100%);
+        color: #fff;
+        text-shadow: 0 0 2px #00ff41, 0 0 2px #111;
+        padding: 14px;
+        border: none;
+        cursor: pointer;
+        border-radius: 7px;
+        font-weight: bold;
+        font-size: 1.15rem;
+        letter-spacing: 2px;
+        font-family: "Fira Mono", "Consolas", monospace;
+        box-shadow: 0 0 18px #00ff41cc, 0 2px 8px #0f03;
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        animation: btn-glow 2s infinite alternate;
+      }
+
+      @keyframes btn-glow {
+        0% {
+          box-shadow: 0 0 18px #00ff41cc, 0 2px 8px #0f03;
+          background: linear-gradient(90deg, #00ff41 0%, #0f0 100%);
+          color: #fff;
+        }
+        100% {
+          box-shadow: 0 0 32px #00ff41cc, 0 2px 8px #0f03;
+          background: linear-gradient(90deg, #00ff41 0%, #0f0 100%);
+          color: #fff;
+        }
+      }
+
+      input[type="submit"]:hover {
+        background: linear-gradient(90deg, #00ff41 0%, #0f0 100%);
+        color: #fff;
+        box-shadow: 0 0 32px #00ff41cc, 0 2px 8px #0f03;
+        animation: none;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.35);
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: rgba(10, 20, 10, 0.98); /* More solid for modal */
+        padding: 48px 32px 40px 32px;
+        border-radius: 22px;
+        box-shadow: 0 0 64px 16px #00ff41cc, 0 8px 32px 0 rgba(0, 255, 0, 0.18);
+        text-align: center;
+        min-width: 340px;
+        min-height: 340px;
+        max-width: 98vw;
+        position: relative;
+        animation: popup 0.25s, neon-border 2.5s linear infinite alternate;
+        border: 2.5px solid #00ff41;
+        color: #fff;
+        text-shadow: 0 0 2px #00ff41, 0 0 2px #111;
+        font-family: "Fira Mono", "Consolas", monospace;
+        opacity: 0;
+        transform: scale(0.7);
+        animation: popup-in 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards,
+          neon-border 2.5s linear infinite alternate;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .prediction-fields {
+        margin: 18px 0 24px 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        background: rgba(0, 255, 65, 0.08);
+        border-radius: 12px;
+        padding: 18px 22px;
+        box-shadow: 0 0 16px #00ff4133 inset;
+        border: 1.5px solid #00ff41;
+        max-width: 420px;
+      }
+      .prediction-fields .field-label {
+        color: #00ff41;
+        font-size: 1.08rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+        text-shadow: 0 0 4px #00ff41;
+      }
+      .prediction-fields .field-value {
+        color: #fff;
+        font-size: 1.18rem;
+        font-weight: 700;
+        margin-left: 8px;
+        text-shadow: 0 0 2px #00ff41, 0 0 2px #111;
+      }
+      .prediction-title {
+        color: #fff;
+        text-shadow: 0 0 8px #00ff41, 0 0 2px #111;
+        margin-bottom: 18px;
+        font-size: 1.45rem;
+        font-weight: 700;
+        animation: label-flicker 2.5s infinite alternate;
+      }
+      .prediction-value {
+        font-size: 2.1rem;
+        color: #ff1744;
+        text-shadow: 0 0 16px #ff1744, 0 0 2px #fff;
+        font-weight: bold;
+        animation: hacker-glow 2s infinite alternate;
+        margin-top: 18px;
+        margin-bottom: 8px;
+      }
+
+      @media (max-width: 500px) {
+        .container {
+          padding: 10vw 2vw 8vw 2vw;
+          max-width: 98vw;
+        }
+        .modal-content {
+          padding: 10vw;
+        }
+      }
+
+      /* Loader styles */
+      .loader-container {
+        background: rgba(10, 30, 10, 0.98);
+        border-radius: 32px;
+        box-shadow: 0 0 60px 16px #00ff41cc, 0 0 0 8px #00ff4144,
+          0 0 80px 24px #00ff4133;
+        padding: 48px 48px 40px 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 10;
+        min-width: 320px;
+        min-height: 320px;
+        border: 2.5px solid #00ff41;
+        backdrop-filter: blur(2px) saturate(140%);
+        -webkit-backdrop-filter: blur(2px) saturate(140%);
+        transition: box-shadow 0.3s, border 0.3s;
+        overflow: hidden;
+        margin: 0 16px;
+      }
+      .loader-container::before {
+        content: "";
+        position: absolute;
+        inset: -16px;
+        border-radius: 40px;
+        pointer-events: none;
+        z-index: 1;
+        box-shadow: 0 0 80px 24px #00ff41cc, 0 0 120px 48px #00ff4133;
+        opacity: 0.45;
+        filter: blur(2px);
+      }
+      .cyber-loader {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 2;
+      }
+      .cyber-ring {
+        position: absolute;
+        border: 6px solid #00ff41;
+        border-top: 6px solid transparent;
+        border-radius: 50%;
+        width: 140px;
+        height: 140px;
+        animation: cyber-spin 1.2s linear infinite;
+        box-shadow: 0 0 32px #00ff41cc;
+        opacity: 0.8;
+      }
+      .cyber-ring:nth-child(2) {
+        width: 100px;
+        height: 100px;
+        border-width: 4px;
+        border-color: #00ff41 #00ff41 #00ff41 transparent;
+        animation-duration: 1.8s;
+        animation-direction: reverse;
+        opacity: 0.5;
+      }
+      .cyber-dot {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        background: #00ff41;
+        border-radius: 50%;
+        box-shadow: 0 0 24px #00ff41cc, 0 0 48px #00ff4144;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        animation: cyber-dot-pulse 1.2s infinite alternate;
+      }
+      .cyber-text {
+        margin-top: 220px;
+        color: #00ff41;
+        font-family: "Fira Mono", "Consolas", monospace;
+        font-size: 1.35rem;
+        letter-spacing: 0.25em;
+        text-shadow: 0 0 24px #00ff41cc, 0 0 8px #00ff41;
+        animation: cyber-text-flicker 1.5s infinite alternate;
+        user-select: none;
+        z-index: 2;
+        text-align: center;
+      }
+      @keyframes cyber-spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes cyber-dot-pulse {
+        0% {
+          box-shadow: 0 0 16px #00ff41cc, 0 0 32px #00ff4144;
+        }
+        100% {
+          box-shadow: 0 0 32px #00ff41cc, 0 0 64px #00ff4144;
+        }
+      }
+      @keyframes cyber-text-flicker {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        45% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        55% {
+          opacity: 0.7;
+        }
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 18px;
+        right: 22px;
+        width: 38px;
+        height: 38px;
+        background: none;
+        border: none;
+        border-radius: 50%;
+        font-size: 2.1rem;
+        color: #00ff41;
+        cursor: pointer;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 12px #00ff41cc, 0 0 0 2px #00ff41 inset;
+        background: rgba(0, 0, 0, 0.18);
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s,
+          transform 0.15s;
+        z-index: 10;
+        outline: none;
+        text-shadow: 0 0 8px #00ff41, 0 0 2px #fff;
+      }
+      .close-btn:hover,
+      .close-btn:focus {
+        color: #ff1744;
+        background: rgba(0, 255, 65, 0.15);
+        box-shadow: 0 0 24px #ff1744cc, 0 0 0 2px #ff1744 inset;
+        transform: scale(1.13) rotate(8deg);
+        text-shadow: 0 0 12px #ff1744, 0 0 2px #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loader Overlay -->
+    <div
+      id="loaderOverlay"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        z-index: 2000;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(8px);
+      "
+    >
+      <div class="loader-container">
+        <div class="cyber-loader">
+          <div class="cyber-ring"></div>
+          <div class="cyber-ring"></div>
+          <div class="cyber-dot"></div>
+          <div class="cyber-text">LOADING</div>
+        </div>
+      </div>
+    </div>
+    <!-- Background Video -->
+    <video
+      class="bg-gif"
+      autoplay
+      muted
+      loop
+      playsinline
+      id="bgVideo"
+      onerror="this.style.display='none';"
+    >
+      <source
+        src="{{ url_for('static', filename='assets/i-am-free-anonymous.960x540.mp4') }}"
+        type="video/mp4"
+      />
+      Your browser does not support the video tag.
+    </video>
+    <script>
+      // Debug: Log error if video fails to load
+      document
+        .getElementById("bgVideo")
+        .addEventListener("error", function (e) {
+          console.error(
+            "Background video failed to load. Check the file path and format."
+          );
+        });
+
+      // Hide loader after page load
+      window.addEventListener("DOMContentLoaded", function () {
+        setTimeout(function () {
+          var loader = document.getElementById("loaderOverlay");
+          if (loader) loader.style.display = "none";
+        }, 3000); // Loader stays for 3s for effect
+      });
+    </script>
+    <div class="container">
+      <div class="scanline"></div>
+      <div class="icon-bar">
+        <!-- Unique SVG hacker/cyber icon -->
+        <svg viewBox="0 0 64 64" fill="none">
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
+            stroke="#00ff41"
+            stroke-width="3"
+            opacity="0.7"
+          />
+          <path d="M20 44 L32 20 L44 44 Z" fill="#00ff41" opacity="0.18" />
+          <circle
+            cx="32"
+            cy="32"
+            r="8"
+            stroke="#00ff41"
+            stroke-width="2"
+            fill="none"
+          />
+          <circle cx="32" cy="32" r="3" fill="#00ff41" />
+        </svg>
+      </div>
+      <div class="terminal-corner tl"></div>
+      <div class="terminal-corner tr"></div>
+      <div class="terminal-corner bl"></div>
+      <div class="terminal-corner br"></div>
+      <h2>Web Attack Prediction</h2>
+      <form method="POST" action="/predict" autocomplete="off" id="predictForm">
+        <label for="flow_duration">Flow Duration:</label>
+        <input
+          type="number"
+          step="any"
+          name="flow_duration"
+          required
+          placeholder="Enter flow duration"
+        />
+
+        <label for="total_fwd_packets">Total Fwd Packets:</label>
+        <input
+          type="number"
+          step="any"
+          name="total_fwd_packets"
+          required
+          placeholder="Enter total forward packets"
+        />
+
+        <label for="total_backward_packets">Total Backward Packets:</label>
+        <input
+          type="number"
+          step="any"
+          name="total_backward_packets"
+          required
+          placeholder="Enter total backward packets"
+        />
+
+        <label for="total_length_fwd_packets"
+          >Total Length of Fwd Packets:</label
+        >
+        <input
+          type="number"
+          step="any"
+          name="total_length_fwd_packets"
+          required
+          placeholder="Enter total length of forward packets"
+        />
+
+        <input type="submit" value="Predict" />
+      </form>
+    </div>
+
+    <div id="predictionModal" class="modal">
+      <div class="modal-content">
+        <button
+          class="close-btn"
+          onclick="closeModal()"
+          aria-label="Close Prediction Popup"
+        >
+          &times;
+        </button>
+        <div class="prediction-title">Prediction Result</div>
+        <div
+          class="prediction-fields"
+          id="predictionFields"
+          style="display: none"
+        >
+          <div>
+            <span class="field-label">Flow Duration:</span
+            ><span class="field-value" id="fieldFlowDuration"></span>
+          </div>
+          <div>
+            <span class="field-label">Total Fwd Packets:</span
+            ><span class="field-value" id="fieldTotalFwdPackets"></span>
+          </div>
+          <div>
+            <span class="field-label">Total Backward Packets:</span
+            ><span class="field-value" id="fieldTotalBackwardPackets"></span>
+          </div>
+          <div>
+            <span class="field-label">Total Length of Fwd Packets:</span
+            ><span class="field-value" id="fieldTotalLengthFwdPackets"></span>
+          </div>
+        </div>
+        <div class="prediction-value" id="predictionValue"></div>
+      </div>
+    </div>
+
+    <script>
+      // Store form values and show in modal
+      let lastFormData = null;
+
+      function closeModal() {
+        document.getElementById("predictionModal").style.display = "none";
+        // Clear displayed values
+        document.getElementById("fieldFlowDuration").textContent = "";
+        document.getElementById("fieldTotalFwdPackets").textContent = "";
+        document.getElementById("fieldTotalBackwardPackets").textContent = "";
+        document.getElementById("fieldTotalLengthFwdPackets").textContent = "";
+        document.getElementById("predictionFields").style.display = "none";
+        lastFormData = null;
+      }
+
+      window.onclick = function (event) {
+        var modal = document.getElementById("predictionModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+
+      // Show loader on form submit
+      document
+        .getElementById("predictForm")
+        .addEventListener("submit", function (e) {
+          // Store values before submit
+          lastFormData = {
+            flow_duration: document.querySelector('input[name="flow_duration"]')
+              .value,
+            total_fwd_packets: document.querySelector(
+              'input[name="total_fwd_packets"]'
+            ).value,
+            total_backward_packets: document.querySelector(
+              'input[name="total_backward_packets"]'
+            ).value,
+            total_length_fwd_packets: document.querySelector(
+              'input[name="total_length_fwd_packets"]'
+            ).value,
+          };
+          // Save to sessionStorage for server roundtrip
+          sessionStorage.setItem("lastFormData", JSON.stringify(lastFormData));
+          var loader = document.getElementById("loaderOverlay");
+          if (loader) loader.style.display = "flex";
+        });
+
+      // On modal show, display the values if available
+      function showPredictionFields() {
+        // Try to get from sessionStorage if not present
+        if (!lastFormData) {
+          let stored = sessionStorage.getItem("lastFormData");
+          if (stored) {
+            lastFormData = JSON.parse(stored);
+          }
+        }
+        if (lastFormData) {
+          document.getElementById("fieldFlowDuration").textContent =
+            lastFormData.flow_duration || "";
+          document.getElementById("fieldTotalFwdPackets").textContent =
+            lastFormData.total_fwd_packets || "";
+          document.getElementById("fieldTotalBackwardPackets").textContent =
+            lastFormData.total_backward_packets || "";
+          document.getElementById("fieldTotalLengthFwdPackets").textContent =
+            lastFormData.total_length_fwd_packets || "";
+          document.getElementById("predictionFields").style.display = "block";
+        }
+      }
+
+      // For server-side prediction, show values if available
+      // (Jinja2 block must be outside the JS function)
+    </script>
+
+    {% if prediction %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Always try to get values from sessionStorage (set on submit)
+        let stored = sessionStorage.getItem("lastFormData");
+        if (stored) {
+          lastFormData = JSON.parse(stored);
+          sessionStorage.removeItem("lastFormData");
+        }
+        showPredictionFields();
+        document.getElementById("predictionValue").textContent =
+          "{{ prediction|e }}";
+        // Ensure modal is visible and opacity is set
+        var modal = document.getElementById("predictionModal");
+        var modalContent = document.querySelector(".modal-content");
+        if (modal && modalContent) {
+          modal.style.display = "flex";
+          modalContent.style.opacity = "1";
+          modalContent.style.transform = "scale(1)";
+        }
+      });
+    </script>
+    {% endif %}
+  </body>
+</html>
