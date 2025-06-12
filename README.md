@@ -31,10 +31,7 @@
 - **Input Validation:** Ensures all required features are provided and valid.
 - **Prediction Modal:** Displays prediction and input summary in a stylish popup.
 
----
----
----
-----
+
 
 
 
@@ -48,10 +45,7 @@
 - **Model:** Random Forest Classifier (trained on 4 selected features)
 - **Other:** Bootstrap (optional), Pandas, NumPy
 
----
----
-----
----
+
 
 ## Project Structure
 
@@ -74,8 +68,6 @@ CYBER_PROJECT/
 
 
 
----
----
----
+
 
 *For more details, see the code in [`CYBER_PROJECT`](./CYBER_PROJECT).*
